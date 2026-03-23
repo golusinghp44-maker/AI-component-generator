@@ -31,23 +31,69 @@ const Home = () => {
   const { getAuthToken } = useContext(AuthContext);
   const [history, setHistory] = useState([]);
 
-  useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        const token = getAuthToken();
-        if (!token) return;
-        const res = await fetch("http://localhost:5000/history", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setHistory(Array.isArray(data?.history) ? data.history : []);
-      } catch {
-        setHistory([]);
-      }
-    };
+  // Utility functions for history management
+  const getLocalStorageKey = () => {
+    const token = getAuthToken();
+    return `codeHistory_${token}`;
+  };
 
+  const saveHistoryToLocalStorage = (newEntry) => {
+    try {
+      const key = getLocalStorageKey();
+      const existing = JSON.parse(localStorage.getItem(key) || "[]");
+      const updated = [newEntry, ...existing].slice(0, 50); // Keep last 50
+      localStorage.setItem(key, JSON.stringify(updated));
+      return true;
+    } catch (err) {
+      console.warn("Failed to save to localStorage:", err);
+      return false;
+    }
+  };
+
+  const getHistoryFromLocalStorage = () => {
+    try {
+      const key = getLocalStorageKey();
+      return JSON.parse(localStorage.getItem(key) || "[]");
+    } catch (err) {
+      console.warn("Failed to read from localStorage:", err);
+      return [];
+    }
+  };
+
+  // Load history from backend (Supabase) or localStorage (fallback)
+  const loadHistory = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        setHistory(getHistoryFromLocalStorage());
+        return;
+      }
+
+      // Try backend first
+      const res = await fetch("http://localhost:5000/history", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const backendHistory = Array.isArray(data?.history) ? data.history : [];
+        setHistory(backendHistory);
+        console.log("✅ History loaded from backend:", backendHistory.length);
+      } else {
+        // Fallback to localStorage
+        console.warn("⚠️ Backend returned status", res.status, "- Using localStorage");
+        setHistory(getHistoryFromLocalStorage());
+      }
+    } catch (err) {
+      // Fallback to localStorage on network error
+      console.warn("⚠️ Failed to load from backend, using localStorage:", err.message);
+      setHistory(getHistoryFromLocalStorage());
+    }
+  };
+
+  useEffect(() => {
     loadHistory();
-  }, [getAuthToken]);
+  }, []);
 
  
 
@@ -71,18 +117,43 @@ const Home = () => {
       // Backend call
       const data = await res.json();
       console.log("API RESPONSE 👉", data);
-      // Editor me code show karna
-      setCode(data.code || "No code generated");
+      const generatedCode = data.code || "No code generated";
+      
+      // Save code to state
+      setCode(generatedCode);
       setOutputScreen(true); // Editor show
 
+      // Create history entry
+      const historyEntry = {
+        id: Date.now(),
+        framework,
+        prompt,
+        code: generatedCode,
+        created_at: new Date().toISOString(),
+      };
+
+      // Save to localStorage immediately
+      saveHistoryToLocalStorage(historyEntry);
+
+      // Try to update backend history
       try {
         const histRes = await fetch("http://localhost:5000/history", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const histData = await histRes.json();
-        setHistory(Array.isArray(histData?.history) ? histData.history : []);
-      } catch {
-        // ignore
+
+        if (histRes.ok) {
+          const histData = await histRes.json();
+          setHistory(Array.isArray(histData?.history) ? histData.history : []);
+          console.log("✅ History synced from backend");
+        } else {
+          // Use localStorage as fallback
+          setHistory(getHistoryFromLocalStorage());
+          console.warn("⚠️ Backend history sync failed, using localStorage");
+        }
+      } catch (err) {
+        // Use localStorage as fallback
+        console.warn("⚠️ Failed to sync backend history:", err.message);
+        setHistory(getHistoryFromLocalStorage());
       }
     } catch (err) {
       console.error(err);

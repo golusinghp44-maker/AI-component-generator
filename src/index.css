@@ -1,9 +1,36 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-/* Ensure base styles are applied */
+:root {
+  /* Color Variables */
+  --primary-bg: #09090B;
+  --secondary-bg: #141319;
+  --tertiary-bg: #1F1F26;
+  --border-color: #47596b;
+  --text-primary: #ffffff;
+  --text-secondary: #999999;
+  --accent-color: #a855f7;
+  --hover-bg: #222222;
+}
+
 html, body, #root {
   width: 100%;
   height: 100%;
+  background-color: #09090B;
+  color: #fff;
 }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

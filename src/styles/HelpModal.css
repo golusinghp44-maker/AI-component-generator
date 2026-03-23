@@ -1,0 +1,216 @@
+/* Help Modal Overlay */
+.help-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.light-mode .help-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Help Modal Content */
+.help-modal-content {
+  background-color: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-width: 42rem;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+/* Header */
+.help-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--secondary-bg);
+}
+
+.help-modal-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.help-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-modal-close:hover {
+  background-color: var(--tertiary-bg);
+}
+
+/* Body Content */
+.help-modal-body {
+  padding: 1.5rem;
+  color: var(--text-primary);
+  space-y: 1.5rem;
+}
+
+.help-modal-body section {
+  margin-bottom: 1.5rem;
+}
+
+.help-modal-body section:last-child {
+  margin-bottom: 0;
+}
+
+/* Help Sections */
+.help-section {
+  margin-bottom: 1.5rem;
+}
+
+.help-section h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #a855f7;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.help-section p {
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.help-section p strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.help-section ol,
+.help-section ul {
+  list-style-position: inside;
+  margin-left: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.help-section li {
+  color: var(--text-secondary);
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.help-section code {
+  background-color: var(--tertiary-bg);
+  color: #a855f7;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.help-faq {
+  space-y: 0.75rem;
+}
+
+.help-faq > div {
+  margin-bottom: 0.75rem;
+}
+
+.help-faq-question {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.help-faq-answer {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-top: 0.25rem;
+}
+
+.help-contact-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+/* Footer */
+.help-modal-footer {
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  background-color: var(--secondary-bg);
+}
+
+.help-modal-action-btn,
+.help-modal-btn {
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(to right, #a855f7, #9333ea);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.help-modal-action-btn:hover,
+.help-modal-btn:hover {
+  opacity: 0.9;
+}
+
+/* Scrollbar styling */
+.help-modal-content::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.help-modal-content::-webkit-scrollbar-track {
+  background-color: var(--primary-bg);
+}
+
+.help-modal-content::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 0.25rem;
+}
+
+.help-modal-content::-webkit-scrollbar-thumb:hover {
+  background-color: #a855f7;
+}
+
+/* Light mode adjustments */
+.light-mode .help-modal-content {
+  background-color: var(--secondary-bg);
+}
+
+.light-mode .help-modal-header {
+  background-color: var(--secondary-bg);
+  border-color: var(--border-color);
+}
+
+.light-mode .help-modal-title {
+  color: var(--text-primary);
+}
+
+.light-mode .help-modal-close:hover {
+  background-color: var(--hover-bg);
+}
+
+.light-mode .help-section-title {
+  color: #a855f7;
+}

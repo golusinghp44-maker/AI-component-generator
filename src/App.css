@@ -10,16 +10,38 @@ body{
   overflow-x: hidden;
   background-color: var(--primary-bg);
   color: #fff;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 html{
   overflow-x: hidden;
 }
 
-:root{
+/* Dark Mode (default) */
+:root, .dark-mode{
   --primary-bg: #09090B;
   --secondary-bg: #141319;
   --tertiary-bg:#17171C;
+  --text-primary: #ffffff;
+  --text-secondary: #9ca3af;
+  --border-color: #47596b;
+  --hover-bg: #333;
+}
+
+/* Light Mode */
+.light-mode{
+  --primary-bg: #f5f5f5;
+  --secondary-bg: #ffffff;
+  --tertiary-bg: #e5e5e5;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b7280;
+  --border-color: #d1d5db;
+  --hover-bg: #e5e5e5;
+}
+
+.light-mode body {
+  color: var(--text-primary);
+  background-color: var(--primary-bg);
 }
 
 .sp-text {
@@ -41,20 +63,31 @@ html{
 .icon{
   padding: 15px;
   font-size: 20px;
-  border: 1px solid #47596b;
+  border: 1px solid var(--border-color);
   border-radius: 10px; 
   background-color: var(--secondary-bg);
   cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-primary);
+}
+
+.icon:hover {
+  background-color: var(--hover-bg);
 }
 
 .loader {
   background-color: rgba(0, 0, 0, 0.5);
 }
 
+.light-mode .loader {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
 .input-field {
-  background-color: #17171C;
-  border-color: #47596b;
-  color: #fff;
+  background-color: var(--tertiary-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
 }
 
 .input-field:focus {
@@ -64,8 +97,58 @@ html{
 
 .generate {
   background: linear-gradient(to right, #a855f7, #9333ea);
+  transition: all 0.3s ease;
 }
 
 .generate:hover {
   opacity: 0.8;
+}
+
+/* Light Mode color overrides for hardcoded Tailwind classes */
+.light-mode .bg-\[#141319\],
+.light-mode .bg-\[#09090B\],
+.light-mode .bg-\[#17171C\] {
+  background-color: var(--secondary-bg);
+  border-color: var(--border-color);
+}
+
+.light-mode .border-\[#47596b\],
+.light-mode .border-zinc-800 {
+  border-color: var(--border-color);
+}
+
+.light-mode .hover\:bg-\[#333\]:hover,
+.light-mode .hover\:bg-\[#141319\]:hover,
+.light-mode .hover\:bg-\[#17171C\]:hover {
+  background-color: var(--hover-bg);
+}
+
+.light-mode .text-white {
+  color: var(--text-primary);
+}
+
+.light-mode .placeholder-gray-400::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Login container and form styling */
+.light-mode .login-container {
+  background-color: var(--secondary-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.light-mode .min-h-screen {
+  background-color: var(--primary-bg);
+}
+
+/* Nav styling */
+.light-mode .nav {
+  border-color: var(--border-color);
+  background-color: var(--secondary-bg);
+}
+
+/* Profile and settings dropdowns */
+.light-mode .bg-\[#141319\] {
+  background-color: var(--secondary-bg) !important;
 }

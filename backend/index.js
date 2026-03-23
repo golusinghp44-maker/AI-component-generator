@@ -256,20 +256,45 @@ Return only the code, no explanation.
 
 app.get("/history", authenticateToken, async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
-      .from("generated_code_history")
-      .select("id,framework,prompt,code,created_at")
-      .eq("user_token", req.token)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
+    const token = req.token;
+    
+    if (!token) {
+      return res.status(401).json({ error: "No token provided", history: [] });
     }
 
-    return res.json({ history: data || [] });
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("generated_code_history")
+        .select("id,framework,prompt,code,created_at")
+        .eq("user_token", token)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.warn("⚠️ Supabase error fetching history:", error.message);
+        return res.status(200).json({ 
+          history: [],
+          note: "Supabase fetch failed, use client-side localStorage",
+          error: error.message 
+        });
+      }
+
+      return res.status(200).json({ history: data || [] });
+    } catch (dbErr) {
+      console.warn("⚠️ Database error:", dbErr.message);
+      return res.status(200).json({ 
+        history: [],
+        note: "Database error, use client-side localStorage",
+        error: dbErr.message 
+      });
+    }
   } catch (e) {
-    return res.status(500).json({ error: e?.message || String(e) });
+    console.error("❌ History endpoint error:", e.message);
+    return res.status(200).json({ 
+      history: [],
+      note: "Server error, use client-side localStorage",
+      error: e.message 
+    });
   }
 });
 

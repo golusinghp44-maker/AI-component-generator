@@ -1,15 +1,20 @@
 import React, { useEffect } from "react";
-import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import "./App.css";
+
+// Import Pages
+import Login from "./pages/Login";
 import Home from "./pages/Home";
 import NoPages from "./pages/NoPages";
-import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
-  // Initialize demo user on first load
   useEffect(() => {
+    console.log("1. App starting...");
+    
+    // Initialize demo users if not exist
     const users = localStorage.getItem("users");
     if (!users) {
       const demoUsers = [
@@ -17,32 +22,42 @@ const App = () => {
           id: "1",
           email: "demo@example.com",
           name: "Demo User",
-          password: btoa("password123"), // "password123" hashed
+          password: btoa("password123"),
           createdAt: new Date().toISOString(),
         },
       ];
       localStorage.setItem("users", JSON.stringify(demoUsers));
-      console.log("Demo user initialized. Use demo@example.com / password123");
     }
+    
+    console.log("2. Demo users initialized");
+    console.log("3. React Router loaded");
+    console.log("4. Theme Provider initialized");
   }, []);
 
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NoPages />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            
+            {/* Protected Routes */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Catch all - redirect to home if authenticated, login if not */}
+            <Route path="*" element={<NoPages />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

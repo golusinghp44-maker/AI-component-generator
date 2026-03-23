@@ -4,44 +4,23 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       backgroundColor: {
-        'primary': '#09090B',
-        'secondary': '#141319',
-        'tertiary': '#17171C',
+        'primary': 'var(--primary-bg)',
+        'secondary': 'var(--secondary-bg)',
+        'tertiary': 'var(--tertiary-bg)',
       },
       textColor: {
-        'primary': '#09090B',
-        'secondary': '#141319',
-        'tertiary': '#17171C',
+        'primary': 'var(--text-primary)',
+        'secondary': 'var(--text-secondary)',
+        'tertiary': 'var(--tertiary-bg)',
       },
+      borderColor: {
+        'primary': 'var(--border-color)',
+      }
     },
   },
   plugins: [],
-  safelist: [
-    {
-      pattern: /bg-\[.*\]/,
-      variants: ['hover', 'focus', 'active'],
-    },
-    {
-      pattern: /text-\[.*\]/,
-      variants: ['hover', 'focus', 'active'],
-    },
-    {
-      pattern: /w-\[.*\]/,
-    },
-    {
-      pattern: /h-\[.*\]/,
-    },
-    {
-      pattern: /p-\[.*\]/,
-    },
-    {
-      pattern: /m-\[.*\]/,
-    },
-    {
-      pattern: /gap-\[.*\]/,
-    },
-  ],
 }

@@ -2,13 +2,28 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import axios from "axios";
 
 // ------------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, ".env") });
+
+// Load env vars from the server first, then common workspace locations.
+const envCandidates = [
+  path.join(__dirname, ".env"),
+  path.join(__dirname, ".env.local"),
+  path.resolve(__dirname, "..", ".env"),
+  path.resolve(__dirname, "..", ".env.local"),
+  path.resolve(__dirname, "..", "backend", ".env")
+];
+
+for (const envPath of envCandidates) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+  }
+}
 
 // ------------------------
 const app = express();

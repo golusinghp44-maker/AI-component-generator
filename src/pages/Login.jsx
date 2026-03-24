@@ -130,34 +130,13 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090B] flex items-center justify-center p-4">
-      <style>{`
-        .login-container {
-          background: linear-gradient(135deg, #141319 0%, #17171C 100%);
-        }
-        .input-field {
-          background-color: #09090B;
-          border-color: #47596b;
-          color: white;
-        }
-        .input-field::placeholder {
-          color: #8b94a8;
-        }
-        .input-field:focus {
-          border-color: #f881d0;
-          box-shadow: 0 0 0 3px rgba(248, 129, 208, 0.1);
-        }
-        .sp-gradient-btn {
-          background: conic-gradient(at top, #f881d0, #636);
-        }
-      `}</style>
-      
-      <div className="login-container rounded-2xl shadow-2xl w-full max-w-md p-8 border border-[#47596b]">
+    <div className="min-h-screen app-surface flex items-center justify-center p-4 app-text-primary">
+      <div className="login-container rounded-2xl shadow-2xl w-full max-w-md p-8 border app-border app-panel">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold sp-text mb-2">
             {isLogin ? "Welcome Back" : "Join Us"}
           </h1>
-          <p className="text-gray-400 text-sm">
+          <p className="app-text-secondary text-sm">
             {isLogin
               ? "Sign in to your account to continue"
               : "Create an account to get started"}
@@ -167,7 +146,7 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           {!isLogin && (
             <div>
-              <label className="block text-white font-semibold mb-2 text-sm">
+              <label className="block app-text-primary font-semibold mb-2 text-sm">
                 Full Name
               </label>
               <input
@@ -183,7 +162,7 @@ const Login = () => {
           )}
 
           <div>
-            <label className="block text-white font-semibold mb-2 text-sm">
+            <label className="block app-text-primary font-semibold mb-2 text-sm">
               Email Address
             </label>
             <input
@@ -198,7 +177,7 @@ const Login = () => {
           </div>
 
           <div>
-            <label className="block text-white font-semibold mb-2 text-sm">
+            <label className="block app-text-primary font-semibold mb-2 text-sm">
               Password
             </label>
             <input
@@ -214,7 +193,7 @@ const Login = () => {
 
           {!isLogin && (
             <div>
-              <label className="block text-white font-semibold mb-2 text-sm">
+              <label className="block app-text-primary font-semibold mb-2 text-sm">
                 Confirm Password
               </label>
               <input
@@ -244,20 +223,20 @@ const Login = () => {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-[#47596b]">
-          <p className="text-center text-gray-400 text-sm mb-4">
+        <div className="mt-8 pt-6 border-t app-border">
+          <p className="text-center app-text-secondary text-sm mb-4">
             {isLogin ? "Don't have an account?" : "Already have an account?"}
           </p>
           <button
             onClick={toggleMode}
             disabled={loading}
-            className="w-full bg-[#17171C] hover:bg-[#1f1f26] text-white font-semibold py-2 rounded-lg border border-[#47596b] transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full app-tertiary app-hover app-text-primary font-semibold py-2 rounded-lg border app-border transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLogin ? "Sign Up" : "Sign In"}
           </button>
         </div>
 
-        <p className="text-center text-xs text-gray-500 mt-6">
+        <p className="text-center text-xs app-text-secondary mt-6">
           Demo Credentials:<br className="mt-1" />
           Email: demo@example.com<br />
           Password: password123

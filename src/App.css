@@ -9,7 +9,7 @@ body{
   box-sizing: border-box;
   overflow-x: hidden;
   background-color: var(--primary-bg);
-  color: #fff;
+  color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -21,7 +21,7 @@ html{
 :root, .dark-mode{
   --primary-bg: #09090B;
   --secondary-bg: #141319;
-  --tertiary-bg:#17171C;
+  --tertiary-bg: #17171C;
   --text-primary: #ffffff;
   --text-secondary: #9ca3af;
   --border-color: #47596b;
@@ -32,16 +32,56 @@ html{
 .light-mode{
   --primary-bg: #f5f5f5;
   --secondary-bg: #ffffff;
-  --tertiary-bg: #e5e5e5;
+  --tertiary-bg: #f1f1f3;
   --text-primary: #1a1a1a;
   --text-secondary: #6b7280;
   --border-color: #d1d5db;
-  --hover-bg: #e5e5e5;
+  --hover-bg: #ececf0;
 }
 
 .light-mode body {
   color: var(--text-primary);
   background-color: var(--primary-bg);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-surface {
+  background-color: var(--primary-bg);
+}
+
+.app-primary {
+  background-color: var(--primary-bg);
+}
+
+.app-panel {
+  background-color: var(--secondary-bg);
+}
+
+.app-tertiary {
+  background-color: var(--tertiary-bg);
+}
+
+.app-text-primary {
+  color: var(--text-primary);
+}
+
+.app-text-secondary {
+  color: var(--text-secondary);
+}
+
+.app-border {
+  border-color: var(--border-color);
+}
+
+.app-hover:hover {
+  background-color: var(--hover-bg);
+}
+
+.app-active-tab {
+  background-color: var(--hover-bg);
 }
 
 .sp-text {
@@ -90,6 +130,10 @@ html{
   transition: all 0.3s ease;
 }
 
+.input-field::placeholder {
+  color: var(--text-secondary);
+}
+
 .input-field:focus {
   border-color: #a855f7;
   box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.1);
@@ -104,51 +148,6 @@ html{
   opacity: 0.8;
 }
 
-/* Light Mode color overrides for hardcoded Tailwind classes */
-.light-mode .bg-\[#141319\],
-.light-mode .bg-\[#09090B\],
-.light-mode .bg-\[#17171C\] {
-  background-color: var(--secondary-bg);
-  border-color: var(--border-color);
-}
-
-.light-mode .border-\[#47596b\],
-.light-mode .border-zinc-800 {
-  border-color: var(--border-color);
-}
-
-.light-mode .hover\:bg-\[#333\]:hover,
-.light-mode .hover\:bg-\[#141319\]:hover,
-.light-mode .hover\:bg-\[#17171C\]:hover {
-  background-color: var(--hover-bg);
-}
-
-.light-mode .text-white {
-  color: var(--text-primary);
-}
-
-.light-mode .placeholder-gray-400::placeholder {
-  color: var(--text-secondary);
-}
-
-/* Login container and form styling */
-.light-mode .login-container {
-  background-color: var(--secondary-bg);
-  border-color: var(--border-color);
-  color: var(--text-primary);
-}
-
-.light-mode .min-h-screen {
-  background-color: var(--primary-bg);
-}
-
-/* Nav styling */
-.light-mode .nav {
-  border-color: var(--border-color);
-  background-color: var(--secondary-bg);
-}
-
-/* Profile and settings dropdowns */
-.light-mode .bg-\[#141319\] {
-  background-color: var(--secondary-bg) !important;
+.login-container {
+  background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--tertiary-bg) 100%);
 }

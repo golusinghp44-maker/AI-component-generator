@@ -18,8 +18,8 @@ const LogoutButton = () => {
   return (
     <div className="flex items-center gap-4">
       <div className="text-sm">
-        <p className="text-gray-700 font-semibold">{user.name}</p>
-        <p className="text-gray-500 text-xs">{user.email}</p>
+        <p className="app-text-primary font-semibold">{user.name}</p>
+        <p className="app-text-secondary text-xs">{user.email}</p>
       </div>
       <button
         onClick={handleLogout}

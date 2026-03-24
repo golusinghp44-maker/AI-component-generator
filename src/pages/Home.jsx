@@ -1,17 +1,16 @@
-import React from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Select from "react-select";
 import { BsStars } from "react-icons/bs";
 import { HiCodeBracket } from "react-icons/hi2";
 import Editor from "@monaco-editor/react";
-import { useState } from "react";
 import { IoCopy } from "react-icons/io5";
 import { PiExportBold } from "react-icons/pi";
 import { ImNewTab } from "react-icons/im";
 import { FiRefreshCcw } from "react-icons/fi";
 import { ClipLoader } from "react-spinners";
-import { useContext, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { ThemeContext } from "../context/ThemeContext";
 
 const Home = () => {
   const options = [
@@ -29,13 +28,19 @@ const Home = () => {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const { getAuthToken } = useContext(AuthContext);
+  const { isDark } = useContext(ThemeContext);
   const [history, setHistory] = useState([]);
+  const [preferences, setPreferences] = useState({
+    autoOpenPreview: true,
+    compactHistory: false,
+    showTips: true,
+  });
 
   // Utility functions for history management
-  const getLocalStorageKey = () => {
+  const getLocalStorageKey = useCallback(() => {
     const token = getAuthToken();
     return `codeHistory_${token}`;
-  };
+  }, [getAuthToken]);
 
   const saveHistoryToLocalStorage = (newEntry) => {
     try {
@@ -50,7 +55,7 @@ const Home = () => {
     }
   };
 
-  const getHistoryFromLocalStorage = () => {
+  const getHistoryFromLocalStorage = useCallback(() => {
     try {
       const key = getLocalStorageKey();
       return JSON.parse(localStorage.getItem(key) || "[]");
@@ -58,10 +63,10 @@ const Home = () => {
       console.warn("Failed to read from localStorage:", err);
       return [];
     }
-  };
+  }, [getLocalStorageKey]);
 
   // Load history from backend (Supabase) or localStorage (fallback)
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       const token = getAuthToken();
       if (!token) {
@@ -89,10 +94,19 @@ const Home = () => {
       console.warn("⚠️ Failed to load from backend, using localStorage:", err.message);
       setHistory(getHistoryFromLocalStorage());
     }
-  };
+  }, [getAuthToken, getHistoryFromLocalStorage]);
 
   useEffect(() => {
     loadHistory();
+  }, [loadHistory]);
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("userPreferences") || "{}");
+      setPreferences((prev) => ({ ...prev, ...stored }));
+    } catch {
+      // Keep defaults
+    }
   }, []);
 
  
@@ -121,7 +135,7 @@ const Home = () => {
       
       // Save code to state
       setCode(generatedCode);
-      setOutputScreen(true); // Editor show
+      setOutputScreen(preferences.autoOpenPreview); // Editor show
 
       // Create history entry
       const historyEntry = {
@@ -246,15 +260,15 @@ const Home = () => {
   };
 
   return (
-    <div>
+    <div className="app-surface app-text-primary min-h-screen">
       <Navbar />
 
       <div className="flex items-center px-[100px] justify-between gap-[30px]">
-        <div className="left w-[55%] h-[auto] py-[30px] rounded-xl bg-[#141319] mt-5 p-[20px]">
+        <div className="left w-[55%] h-[auto] py-[30px] rounded-xl app-panel border app-border mt-5 p-[20px]">
           <h3 className="text-[25px] font-semibold sp-text">
             Ai component generate
           </h3>
-          <p className="text-[gray] mt-2 text-[16px]">
+          <p className="app-text-secondary mt-2 text-[16px]">
             Describe your component and let AI will code for you.
           </p>
 
@@ -265,37 +279,41 @@ const Home = () => {
             classNamePrefix="black-select"
             onChange={(e) => setFramework(e.value)} // <-- add this line
             styles={{
-              control: (base, state) => ({
+              control: (base) => ({
                 ...base,
-                backgroundColor: "#000",
-                borderColor: "#444",
+                backgroundColor: "var(--tertiary-bg)",
+                borderColor: "var(--border-color)",
                 boxShadow: "none",
                 minHeight: "40px",
+                color: "var(--text-primary)",
               }),
               menu: (base) => ({
                 ...base,
-                backgroundColor: "#000",
+                backgroundColor: "var(--secondary-bg)",
+                color: "var(--text-primary)",
               }),
               option: (base, state) => ({
                 ...base,
                 backgroundColor: state.isFocused
-                  ? "#222"
+                  ? "var(--hover-bg)"
                   : state.isSelected
-                  ? "#333"
-                  : "#000",
-                color: "#fff",
+                  ? isDark
+                    ? "#2c2c34"
+                    : "#d8d8df"
+                  : "var(--secondary-bg)",
+                color: "var(--text-primary)",
               }),
               singleValue: (base) => ({
                 ...base,
-                color: "#fff",
+                color: "var(--text-primary)",
               }),
               placeholder: (base) => ({
                 ...base,
-                color: "#aaa",
+                color: "var(--text-secondary)",
               }),
               dropdownIndicator: (base) => ({
                 ...base,
-                color: "#fff",
+                color: "var(--text-primary)",
               }),
               indicatorSeparator: () => ({
                 display: "none",
@@ -307,11 +325,11 @@ const Home = () => {
           <textarea
             onChange={(e) => setPrompt(e.target.value)}
             value={prompt}
-            className="w-full min-h-[200px] rounded-xl bg-[#09090B] mt-2 p-[10px]"
+            className="w-full min-h-[200px] rounded-xl app-tertiary mt-2 p-[10px] app-text-primary border app-border"
             placeholder="Describe your component in let ai will code for your component."
           ></textarea>
           <div className="flex items-center justify-between">
-            <p className="text-[gray]">
+            <p className="app-text-secondary">
               Click on generate button to generate your code
             </p>
 
@@ -326,13 +344,19 @@ const Home = () => {
             </button>
           </div>
 
+          {preferences.showTips && (
+            <p className="app-text-secondary text-xs mt-3">
+              Tip: Use specific UI details like spacing, color palette, and states to get better generated code.
+            </p>
+          )}
+
           <div className="mt-6">
             <p className="text-[15px] font-[700]">Recent history</p>
-            <div className="mt-2 max-h-[140px] overflow-auto rounded-xl bg-[#09090B] border border-zinc-800">
+            <div className="mt-2 max-h-[140px] overflow-auto rounded-xl app-tertiary border app-border">
               {history.length === 0 ? (
-                <p className="text-[gray] text-sm p-3">No history yet.</p>
+                <p className="app-text-secondary text-sm p-3">No history yet.</p>
               ) : (
-                history.slice(0, 5).map((h) => (
+                history.slice(0, preferences.compactHistory ? 8 : 5).map((h) => (
                   <button
                     type="button"
                     key={h.id}
@@ -343,17 +367,19 @@ const Home = () => {
                       setOutputScreen(true);
                       setTab(1);
                     }}
-                    className="w-full text-left p-3 border-b border-zinc-800 hover:bg-[#141319] transition"
+                    className={`w-full text-left border-b app-border app-hover transition ${
+                      preferences.compactHistory ? "p-2" : "p-3"
+                    }`}
                   >
-                    <p className="text-white text-sm font-semibold">{h.framework}</p>
-                    <p className="text-[gray] text-xs line-clamp-1">{h.prompt}</p>
+                    <p className="app-text-primary text-sm font-semibold">{h.framework}</p>
+                    <p className="app-text-secondary text-xs line-clamp-1">{h.prompt}</p>
                   </button>
                 ))
               )}
             </div>
           </div>
         </div>
-        <div className="right relative mt-2 left w-[50%] h-[80vh] bg-[#141319] rounded-xl">
+        <div className="right relative mt-2 left w-[50%] h-[80vh] app-panel border app-border rounded-xl">
           {outputScreen === false ? (
             <>
               {loading === true ? (
@@ -370,20 +396,20 @@ const Home = () => {
                 <div className="circle p-[20px] w-[70px] flex items-center justify-center text-[30px] h-[70px] rounded-[50%] bg-gradient-to-r from-purple-500  to-purple-600">
                   <HiCodeBracket />
                 </div>
-                <p className="text-[16px] text-[gray] mt-2">
+                <p className="text-[16px] app-text-secondary mt-2">
                   Your component & code will appear here.
                 </p>
               </div>
             </>
           ) : (
             <>
-              <div className="top bg-[#17171C] w-full h-[60px] flex items-center gap-[15px] px-[20px]">
+              <div className="top app-tertiary border-b app-border w-full h-[60px] flex items-center gap-[15px] px-[20px]">
                 <button
                   onClick={() => {
                     setTab(1);
                   }}
                   className={`btn w-[50%]  p-[10px] rounded-xl transition-all ${
-                    tab === 1 ? "bg-[#333]" : ""
+                    tab === 1 ? "app-active-tab" : ""
                   }`}
                 >
                   Code
@@ -393,13 +419,13 @@ const Home = () => {
                     setTab(2);
                   }}
                   className={`btn w-[50%]  p-[10px] rounded-xl transition-all ${
-                    tab === 2 ? "bg-[#333]" : ""
+                    tab === 2 ? "app-active-tab" : ""
                   }`}
                 >
                   Preview
                 </button>
               </div>
-              <div className="top-2 bg-[#17171C] w-full h-[60px] flex items-center justify-between gap-[15px] px-[20px]">
+              <div className="top-2 app-tertiary border-b app-border w-full h-[60px] flex items-center justify-between gap-[15px] px-[20px]">
                 <div className="left">
                   <p className="font-bold">Code Editor</p>
                 </div>
@@ -407,33 +433,33 @@ const Home = () => {
                   {tab === 1 ? (
                     <>
                       <button
-                        className="copy w-[40px] h-[40px] rounded-xl border-[1px] border-zinc-800 flex items-center justify-center transition-all hover:bg-[#333]"
+                        className="copy w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover"
                         onClick={copyCode}
                       >
                         <IoCopy />
                       </button>
-                      <button className="export  w-[40px] h-[40px] rounded-xl border-[1px] border-zinc-800 flex items-center justify-center transition-all hover:bg-[#333]">
+                      <button className="export  w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover">
                         <PiExportBold />
                       </button>
                     </>
                   ) : (
                     <>
-                      <button className="copy w-[40px] h-[40px] rounded-xl border-[1px] border-zinc-800 flex items-center justify-center transition-all hover:bg-[#333]">
+                      <button className="copy w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover">
                         <ImNewTab />
                       </button>
-                      <button className="export  w-[40px] h-[40px] rounded-xl border-[1px] border-zinc-800 flex items-center justify-center transition-all hover:bg-[#333]">
+                      <button className="export  w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover">
                         <FiRefreshCcw />
                       </button>
                     </>
                   )}
                 </div>
               </div>
-              <div className="editor h-[500px] w-full overflow-auto bg-[#09090B]">
+              <div className="editor h-[500px] w-full overflow-auto app-primary border-t app-border">
                 {tab === 1 ? (
                   <>
                     <Editor
                       height="100%"
-                      theme="vs-dark"
+                      theme={isDark ? "vs-dark" : "vs-light"}
                       language="html"
                       value={code}
                       options={{
@@ -446,7 +472,7 @@ const Home = () => {
                     />
                   </>
                 ) : (
-                  <div className="w-full h-full bg-white overflow-auto">
+                  <div className="w-full h-full app-panel overflow-auto">
                     <iframe
                       title="preview"
                       className="w-full h-full border-0"

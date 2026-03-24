@@ -85,6 +85,22 @@ const HelpModal = ({ isOpen, onClose }) => {
               For more help, visit our documentation or contact support at{' '}
               <strong>support@genui.dev</strong>
             </p>
+            <div className="mt-3 flex gap-2">
+              <a
+                href="mailto:support@genui.dev?subject=GenUI%20Support"
+                className="help-modal-btn"
+              >
+                Email Support
+              </a>
+              <a
+                href="https://supabase.com/docs"
+                target="_blank"
+                rel="noreferrer"
+                className="help-modal-btn"
+              >
+                Open Docs
+              </a>
+            </div>
           </div>
         </div>
 

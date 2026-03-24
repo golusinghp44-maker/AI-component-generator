@@ -19,8 +19,8 @@
 html, body, #root {
   width: 100%;
   height: 100%;
-  background-color: #09090B;
-  color: #fff;
+  background-color: var(--primary-bg);
+  color: var(--text-primary);
 }
 
 body {

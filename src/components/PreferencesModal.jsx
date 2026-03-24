@@ -38,7 +38,7 @@ const PreferencesModal = ({ isOpen, onClose }) => {
         <div className="help-modal-header">
           <h2 className="help-modal-title">Preferences</h2>
           <button className="help-modal-close" onClick={onClose} aria-label="Close modal">
-            X
+            ✕
           </button>
         </div>
 

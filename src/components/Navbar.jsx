@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect, useRef } from 'react'
 import { HiSun, HiMoon } from 'react-icons/hi'
+import { HiX } from 'react-icons/hi'
 import { FaUser } from 'react-icons/fa'
 import { RiSettings3Fill } from 'react-icons/ri'
 import { useNavigate } from 'react-router-dom'
@@ -65,15 +66,18 @@ const Navbar = () => {
             {isDark ? <HiSun /> : <HiMoon />}
           </button>
           <div className="relative" ref={profileRef}>
-            <div 
+            <button
+              type="button"
+              aria-label={showProfile ? 'Close profile menu' : 'Open profile menu'}
+              aria-expanded={showProfile}
               onClick={() => {
                 setShowProfile(!showProfile)
                 setShowSettings(false)
               }}
               className="icon"
             >
-              <FaUser />
-            </div>
+              {showProfile ? <HiX /> : <FaUser />}
+            </button>
             {showProfile && (
               <div className="absolute right-0 mt-2 w-56 app-panel border app-border rounded-lg shadow-lg z-50">
                 <div className="p-4 border-b app-border">
@@ -102,15 +106,18 @@ const Navbar = () => {
             )}
           </div>
           <div className="relative" ref={settingsRef}>
-            <div 
+            <button
+              type="button"
+              aria-label={showSettings ? 'Close settings menu' : 'Open settings menu'}
+              aria-expanded={showSettings}
               onClick={() => {
                 setShowSettings(!showSettings)
                 setShowProfile(false)
               }}
               className="icon"
             >
-              <RiSettings3Fill />
-            </div>
+              {showSettings ? <HiX /> : <RiSettings3Fill />}
+            </button>
             {showSettings && (
               <div className="absolute right-0 mt-2 w-56 app-panel border app-border rounded-lg shadow-lg z-50">
                 <button

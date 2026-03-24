@@ -17,16 +17,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ API Key Check
-if (!process.env.GOOGLE_API_KEY) {
-  console.error("❌ GOOGLE_API_KEY missing in .env file");
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
+// ✅ API Key Check (supports Gemini or Groq)
+if (!GOOGLE_API_KEY && !GROQ_API_KEY) {
+  console.error("❌ Missing AI key. Add GOOGLE_API_KEY or GROQ_API_KEY in backend/.env");
   process.exit(1);
-} else {
+}
+
+if (GOOGLE_API_KEY) {
   console.log("✅ GOOGLE_API_KEY loaded successfully");
 }
 
+if (GROQ_API_KEY) {
+  console.log("✅ GROQ_API_KEY loaded successfully");
+}
+
 // ✅ Gemini / Generative AI Client
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
 
 // Model variables (may be initialized lazily)
 const desiredModel = process.env.GOOGLE_MODEL || "models/gemini-1.5-flash";
@@ -34,6 +43,11 @@ const envFallbackModel = process.env.GOOGLE_FALLBACK_MODEL || "models/text-bison
 let model = null;
 
 async function discoverAndInitModel() {
+  if (!genAI) {
+    model = null;
+    return;
+  }
+
   // Try env desired model first
   try {
     model = genAI.getGenerativeModel({ model: desiredModel });
@@ -79,6 +93,33 @@ async function discoverAndInitModel() {
     console.error(`❌ Failed to initialize any model (tried ${desiredModel} and ${envFallbackModel}):`, err?.message || err);
     model = null;
   }
+}
+
+async function generateWithGroq(fullPrompt) {
+  if (!GROQ_API_KEY) {
+    throw new Error("GROQ_API_KEY is missing");
+  }
+
+  const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${GROQ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: fullPrompt }],
+      temperature: 0.6,
+    }),
+  });
+
+  if (!groqRes.ok) {
+    const errorText = await groqRes.text();
+    throw new Error(`Groq API failed (${groqRes.status}): ${errorText}`);
+  }
+
+  const groqData = await groqRes.json();
+  return groqData?.choices?.[0]?.message?.content || "";
 }
 
 // ✅ Simple in-memory user store (for demo - replace with database in production)
@@ -209,29 +250,54 @@ app.post("/generate", authenticateToken, async (req, res) => {
   }
 
   try {
+    const frameworkGuideMap = {
+      "html-css": "Return semantic HTML with a complete <style> block. Do not rely on external CSS frameworks.",
+      "html-tailwind": "Use Tailwind utility classes only. Do not include external CSS files.",
+      "html-bootstrap": "Use Bootstrap 5 classes and structure. Avoid custom heavy CSS unless needed for polish.",
+      "html-css-js": "Return semantic HTML, complete CSS in <style>, and minimal JS in <script> only if interaction is required.",
+      "html-tailwind-bootstrap": "Use Tailwind + Bootstrap-compatible markup while keeping styles conflict-safe and clean.",
+    };
+
+    const frameworkGuide = frameworkGuideMap[framework] || "Return production-ready frontend code for the requested framework.";
+
     const fullPrompt = `
 You are an expert frontend developer.
-Generate clean and responsive code.
+Generate a modern, premium-looking, responsive UI component.
 
 Framework: ${framework}
 Component Description: ${prompt}
 
-Return only the code, no explanation.
+Requirements:
+- Strong visual hierarchy with clean spacing and alignment.
+- Modern color grading with accessible contrast.
+- Polished states (hover, focus, active) for interactive elements.
+- Balanced radius, shadows, and typography for a production feel.
+- Mobile-first responsiveness that also looks refined on desktop.
+- Keep code concise, readable, and reusable.
+
+Framework rules:
+${frameworkGuide}
+
+Return only the code, no explanation, no markdown fences.
     `;
 
-    // Ensure we have an initialized model (discover on-demand)
-    if (!model) {
+    let text = "";
+
+    // Ensure we have an initialized Gemini model (if Google key exists)
+    if (genAI && !model) {
       await discoverAndInitModel();
     }
 
-    if (!model) {
+    if (model) {
+      const result = await model.generateContent(fullPrompt);
+      const response = await result.response;
+      text = response.text();
+    } else if (GROQ_API_KEY) {
+      text = await generateWithGroq(fullPrompt);
+    } else {
       console.error("❌ No available model to handle generation");
       return res.status(500).json({ error: "No available model on server" });
     }
-
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    const text = response.text();
 
     try {
       await supabaseAdmin.from("generated_code_history").insert({

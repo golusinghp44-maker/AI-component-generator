@@ -1,11 +1,14 @@
 import React, { useContext, useState } from "react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { HiX } from "react-icons/hi";
 import Navbar from "../components/Navbar";
 import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
 
 const Profile = () => {
   const { user, updateUserProfile } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || "");
 
@@ -37,12 +40,22 @@ const Profile = () => {
         <div className="app-panel rounded-xl border app-border p-6 max-w-3xl mx-auto">
           <div className="flex items-center justify-between gap-4 mb-6">
             <h1 className="text-2xl font-bold">Profile</h1>
-            <Link
-              to="/account-settings"
-              className="px-4 py-2 rounded-md border app-border app-hover"
-            >
-              Account Settings
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/account-settings"
+                className="px-4 py-2 rounded-md border app-border app-hover"
+              >
+                Account Settings
+              </Link>
+              <button
+                type="button"
+                onClick={() => navigate("/")}
+                aria-label="Close profile"
+                className="w-10 h-10 rounded-md border app-border app-hover flex items-center justify-center"
+              >
+                <HiX className="text-xl" />
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-4 mb-8">

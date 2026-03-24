@@ -27,6 +27,7 @@ const Home = () => {
   const [prompt, setPrompt] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [previewNonce, setPreviewNonce] = useState(0);
   const { getAuthToken } = useContext(AuthContext);
   const { isDark } = useContext(ThemeContext);
   const [history, setHistory] = useState([]);
@@ -117,17 +118,22 @@ const Home = () => {
     setLoading(true);
     setOutputScreen(false);
 
-    const token = getAuthToken();
-    const res = await fetch("http://localhost:5000/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ framework, prompt }),
-    });
-
     try {
+      const token = getAuthToken();
+      const res = await fetch("http://localhost:5000/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ framework, prompt }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.error || `Generation failed with status ${res.status}`);
+      }
+
       // Backend call
       const data = await res.json();
       console.log("API RESPONSE 👉", data);
@@ -171,7 +177,7 @@ const Home = () => {
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to generate code. Check backend or network.");
+      alert(err?.message || "Failed to generate code. Check backend or network.");
     } finally {
       setLoading(false); // Loader hide
     }
@@ -187,76 +193,138 @@ const Home = () => {
     }
   };
 
+  const stripCodeFences = (rawCode = "") => {
+    const fencedMatch = rawCode.match(/```(?:html|css|javascript|js)?\s*([\s\S]*?)```/i);
+    return (fencedMatch ? fencedMatch[1] : rawCode).trim();
+  };
+
+  const addToHead = (doc, headContent) => {
+    if (/<\/head>/i.test(doc)) {
+      return doc.replace(/<\/head>/i, `${headContent}\n</head>`);
+    }
+    return doc.replace(/<html[^>]*>/i, (match) => `${match}\n<head>${headContent}</head>`);
+  };
+
+  const ensureHtmlDocument = (markup) => {
+    const cleaned = stripCodeFences(markup);
+    if (/<!doctype\s+html/i.test(cleaned) || /<html[\s>]/i.test(cleaned)) {
+      return cleaned;
+    }
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+${cleaned}
+</body>
+</html>
+`.trim();
+  };
+
+  const getExportFileName = () => {
+    const nameMap = {
+      "html-css": "component-html-css.html",
+      "html-tailwind": "component-tailwind.html",
+      "html-bootstrap": "component-bootstrap.html",
+      "html-css-js": "component-html-css-js.html",
+      "html-tailwind-bootstrap": "component-tailwind-bootstrap.html",
+    };
+    return nameMap[framework] || "component.html";
+  };
+
+  const exportCodeToFile = () => {
+    const cleanedCode = stripCodeFences(code);
+    if (!cleanedCode) {
+      alert("No code to export");
+      return;
+    }
+
+    const blob = new Blob([cleanedCode], { type: "text/plain;charset=utf-8" });
+    const fileUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = fileUrl;
+    anchor.download = getExportFileName();
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(fileUrl);
+  };
+
+  const openPreviewInNewTab = () => {
+    const previewDoc = getPreviewCode();
+    if (!previewDoc.trim()) {
+      alert("Generate code first to preview in a new tab");
+      return;
+    }
+
+    const popup = window.open("", "_blank", "noopener,noreferrer");
+    if (!popup) {
+      alert("Popup blocked. Please allow popups for this site.");
+      return;
+    }
+
+    popup.document.open();
+    popup.document.write(previewDoc);
+    popup.document.close();
+  };
+
+  const refreshPreview = () => {
+    setPreviewNonce((current) => current + 1);
+  };
+
   const getPreviewCode = () => {
-    let previewCode = code;
-    
-    // Add CSS/JS imports based on framework
-    if (framework === "html-tailwind" || framework === "html-tailwind-bootstrap") {
-      if (!previewCode.includes("tailwindcss")) {
-        previewCode = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script src="https://cdn.tailwindcss.com"></script>
-            <style>
-              body { margin: 0; padding: 10px; }
-            </style>
-          </head>
-          <body>
-            ${previewCode}
-          </body>
-          </html>
-        `;
-      }
-    }
-    
-    if (framework === "html-bootstrap" || framework === "html-tailwind-bootstrap") {
-      if (!previewCode.includes("bootstrap")) {
-        previewCode = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <style>
-              body { margin: 0; padding: 10px; }
-            </style>
-          </head>
-          <body>
-            ${previewCode}
-            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-          </body>
-          </html>
-        `;
-      }
+    let previewDoc = ensureHtmlDocument(code || "");
+
+    const needsTailwind = framework === "html-tailwind" || framework === "html-tailwind-bootstrap";
+    const needsBootstrap = framework === "html-bootstrap" || framework === "html-tailwind-bootstrap";
+
+    if (needsTailwind && !/cdn\.tailwindcss\.com/i.test(previewDoc)) {
+      previewDoc = addToHead(
+        previewDoc,
+        '<script src="https://cdn.tailwindcss.com"></script>'
+      );
     }
 
-    // For plain HTML + CSS
+    if (needsBootstrap && !/bootstrap(\.min)?\.css/i.test(previewDoc)) {
+      previewDoc = addToHead(
+        previewDoc,
+        '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />'
+      );
+    }
+
+    if (needsBootstrap && !/bootstrap(\.bundle)?(\.min)?\.js/i.test(previewDoc) && !/<\/body>/i.test(previewDoc)) {
+      previewDoc = `${previewDoc}\n<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>`;
+    } else if (needsBootstrap && !/bootstrap(\.bundle)?(\.min)?\.js/i.test(previewDoc)) {
+      previewDoc = previewDoc.replace(
+        /<\/body>/i,
+        '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>\n</body>'
+      );
+    }
+
     if (framework === "html-css" || framework === "html-css-js") {
-      if (!previewCode.includes("<!DOCTYPE")) {
-        previewCode = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: Arial, sans-serif; padding: 10px; }
-            </style>
-          </head>
-          <body>
-            ${previewCode}
-          </body>
-          </html>
-        `;
+      const hasCustomStyles = /<style[\s>]|style\s*=|class\s*=/i.test(previewDoc);
+      if (!hasCustomStyles) {
+        previewDoc = addToHead(
+          previewDoc,
+          `<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 16px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+}
+</style>`
+        );
       }
     }
 
-    return previewCode;
+    return previewDoc;
   };
 
   return (
@@ -438,16 +506,31 @@ const Home = () => {
                       >
                         <IoCopy />
                       </button>
-                      <button className="export  w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover">
+                      <button
+                        className="export  w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover"
+                        onClick={exportCodeToFile}
+                        title="Export code"
+                        aria-label="Export code"
+                      >
                         <PiExportBold />
                       </button>
                     </>
                   ) : (
                     <>
-                      <button className="copy w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover">
+                      <button
+                        className="newtab w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover"
+                        onClick={openPreviewInNewTab}
+                        title="Open preview in new tab"
+                        aria-label="Open preview in new tab"
+                      >
                         <ImNewTab />
                       </button>
-                      <button className="export  w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover">
+                      <button
+                        className="refresh  w-[40px] h-[40px] rounded-xl border-[1px] app-border flex items-center justify-center transition-all app-hover"
+                        onClick={refreshPreview}
+                        title="Refresh preview"
+                        aria-label="Refresh preview"
+                      >
                         <FiRefreshCcw />
                       </button>
                     </>
@@ -462,6 +545,7 @@ const Home = () => {
                       theme={isDark ? "vs-dark" : "vs-light"}
                       language="html"
                       value={code}
+                      onChange={(value) => setCode(value || "")}
                       options={{
                         readOnly: false,
                         fontSize: 14,
@@ -474,6 +558,7 @@ const Home = () => {
                 ) : (
                   <div className="w-full h-full app-panel overflow-auto">
                     <iframe
+                      key={`preview-${framework}-${previewNonce}`}
                       title="preview"
                       className="w-full h-full border-0"
                       srcDoc={getPreviewCode()}

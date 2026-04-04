@@ -5,32 +5,13 @@ import { sanitizeUserData } from "../utils/authUtils";
 
 export const AuthContext = createContext();
 
-const getStoredUser = () => {
-  try {
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("authToken");
-
-    if (storedUser && token) {
-      return JSON.parse(storedUser);
-    }
-  } catch (error) {
-    console.error("Error parsing stored user:", error);
-    localStorage.removeItem("user");
-    localStorage.removeItem("authToken");
-  }
-
-  return null;
-};
-
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(getStoredUser);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [authToken, setAuthToken] = useState(() => localStorage.getItem("authToken"));
+  const [authToken, setAuthToken] = useState(null);
 
   const syncSession = useCallback((session) => {
     if (!session?.user || !session?.access_token) {
-      localStorage.removeItem("user");
-      localStorage.removeItem("authToken");
       setUser(null);
       setAuthToken(null);
       return;
@@ -46,8 +27,6 @@ export const AuthProvider = ({ children }) => {
       createdAt: session.user.created_at,
     });
 
-    localStorage.setItem("user", JSON.stringify(normalizedUser));
-    localStorage.setItem("authToken", session.access_token);
     setUser(normalizedUser);
     setAuthToken(session.access_token);
   }, []);
@@ -86,8 +65,6 @@ export const AuthProvider = ({ children }) => {
   }, [syncSession]);
 
   const login = (userData, token) => {
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("authToken", token);
     setUser(userData);
     setAuthToken(token);
   };
@@ -99,8 +76,6 @@ export const AuthProvider = ({ children }) => {
       console.warn("Supabase sign out failed, clearing local auth state", error);
     }
 
-    localStorage.removeItem("user");
-    localStorage.removeItem("authToken");
     setUser(null);
     setAuthToken(null);
   };
@@ -110,25 +85,25 @@ export const AuthProvider = ({ children }) => {
   };
 
   const getAuthToken = () => {
-    return authToken || localStorage.getItem("authToken");
+    return authToken;
   };
 
-  const updateUserProfile = (updates) => {
+  const updateUserProfile = async (updates) => {
     if (!user) return;
 
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
+    const safeName = typeof updates?.name === "string" ? updates.name.trim() : "";
 
-    try {
-      const users = JSON.parse(localStorage.getItem("users") || "[]");
-      const updatedUsers = users.map((item) =>
-        item.id === user.id ? { ...item, ...updates } : item
-      );
-      localStorage.setItem("users", JSON.stringify(updatedUsers));
-    } catch (error) {
-      console.warn("Failed to sync updated user in users list", error);
+    if (safeName) {
+      try {
+        await supabase.auth.updateUser({
+          data: { full_name: safeName },
+        });
+      } catch (error) {
+        console.warn("Failed to update Supabase user metadata", error);
+      }
     }
+
+    setUser((current) => (current ? { ...current, ...updates } : current));
   };
 
   return (

@@ -22,20 +22,18 @@ npm run dev
 
 ## 🔐 Login
 
-**Demo Credentials:**
-- Email: `demo@example.com`
-- Password: `password123`
-
-Or create a new account with sign up.
+Use your Supabase-authenticated account:
+- Sign up with email + password
+- Or sign in with an existing Supabase user
 
 ## ✨ Features Now Available
 
 ### 1. **Authentication System**
-   - ✅ Login/Sign Up
-   - ✅ localStorage persistence
-   - ✅ Protected routes
-   - ✅ Auto-logout
-   - ✅ Logout button
+    - ✅ Login/Sign Up
+    - ✅ Supabase authentication
+    - ✅ Protected routes
+    - ✅ Auto-logout
+    - ✅ Logout button
 
 ### 2. **Gemini API Integrated**
    - ✅ Direct client-side API calls
@@ -75,30 +73,27 @@ Or create a new account with sign up.
 - `*` - 404 page
 
 ### Backend API (Optional)
-- `POST /auth/register` - Create account
-- `POST /auth/login` - Login
+- `GET /auth/me` - Current authenticated user
+- `GET /auth/verify` - Verify Supabase access token
 - `POST /generate` - Generate code with Gemini
 
-## 🔑 API Key
+## 🔑 Environment Keys
 
-The Gemini API key is already configured:
-```
-API Key: AIzaSyApcMBiy0xKG0yGV_D0yhih6Tv5WNMsfo
-Model: gemini-1.5-flash
-```
+Configure env keys before running:
+- Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`)
+- Backend: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (or `SUPABASE_SERVICE_ROLE_KEY`), plus AI key(s)
 
 ## 📝 Next Steps
 
-1. Try logging in with demo credentials
+1. Sign up/sign in with your Supabase account
 2. Explore the AI chat feature
-3. Create your own account
-4. Integrate with backend if needed
-5. Deploy to production
+3. Integrate with backend if needed
+4. Deploy to production
 
 ## 🆘 Quick Help
 
 **Forgot password?** → Sign up with new email  
-**Can't login?** → Clear localStorage: `localStorage.clear()`  
+**Can't login?** → Confirm Supabase env keys and restart frontend/backend  
 **API errors?** → Check internet connection  
 **Backend not responding?** → Start it with `cd backend && npm run dev`
 

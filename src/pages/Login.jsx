@@ -39,10 +39,15 @@ const Login = () => {
       return false;
     }
 
-    if (!isStrongPassword(formData.password)) {
+    if (!isLogin && !isStrongPassword(formData.password)) {
       toast.error(
         "Password must be 8-128 chars and include uppercase, lowercase, and number"
       );
+      return false;
+    }
+
+    if (isLogin && (!formData.password || formData.password.length > 128)) {
+      toast.error("Please enter a valid password");
       return false;
     }
 
@@ -207,18 +212,22 @@ const Login = () => {
             <label className="block app-text-primary font-semibold mb-2 text-sm">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              placeholder="Enter your password (min 6 characters)"
-              className="input-field w-full px-4 py-3 rounded-lg border focus:outline-none transition duration-200"
-              disabled={loading}
-              minLength={8}
-              maxLength={128}
-              autoComplete={isLogin ? "current-password" : "new-password"}
-            />
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder={
+                  isLogin
+                    ? "Enter your password"
+                    : "Enter password (8-128 chars, A-Z, a-z, 0-9)"
+                }
+                className="input-field w-full px-4 py-3 rounded-lg border focus:outline-none transition duration-200"
+                disabled={loading}
+                minLength={isLogin ? 1 : 8}
+                maxLength={128}
+                autoComplete={isLogin ? "current-password" : "new-password"}
+              />
           </div>
 
           {!isLogin && (

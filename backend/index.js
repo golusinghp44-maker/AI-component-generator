@@ -140,7 +140,7 @@ const authenticateToken = async (req, res, next) => {
     req.token = token;
     req.user = data.user;
     return next();
-  } catch (error) {
+  } catch {
     return res.status(401).json({ error: "Token verification failed" });
   }
 };
@@ -305,12 +305,12 @@ app.get("/history", authenticateToken, async (req, res) => {
     }
 
     try {
-        const { data, error } = await supabaseAdmin
-          .from("generated_code_history")
-          .select("id,framework,prompt,code,created_at")
-          .eq("user_token", userId)
-          .order("created_at", { ascending: false })
-          .limit(50);
+      const { data, error } = await supabaseAdmin
+        .from("generated_code_history")
+        .select("id,framework,prompt,code,created_at")
+        .eq("user_token", userId)
+        .order("created_at", { ascending: false })
+        .limit(50);
 
       if (error) {
         console.warn("⚠️ Supabase error fetching history:", error.message);

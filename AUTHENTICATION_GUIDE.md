@@ -1,15 +1,15 @@
 # AI Code Generator - Authentication & Gemini API Setup
 
 ## Overview
-This project now includes a complete authentication system with localStorage-based login and the free Google Gemini API integrated for AI-powered code generation.
+This project includes a Supabase-based authentication system and Gemini/Groq integration for AI-powered code generation.
 
 ## Features
 
 ### ✅ Authentication System
 - **Login/Sign Up Page**: Beautiful, responsive authentication interface
-- **localStorage Storage**: User data and auth tokens stored securely in browser
+- **Supabase Auth**: Real email/password authentication through Supabase
 - **Protected Routes**: Home page is protected and requires authentication
-- **Auto-login**: Users stay logged in even after refreshing the page
+- **Auto-login**: Session restored from Supabase on refresh
 - **Logout Functionality**: Secure logout from navbar
 
 ### ✅ Gemini API Integration
@@ -41,17 +41,12 @@ The backend listens on `http://localhost:5000`
 
 ## Authentication Flow
 
-### Demo User
-For quick testing, the app comes with a pre-seeded demo user:
-- **Email**: `demo@example.com`
-- **Password**: `password123`
-
 ### Register New Account
 1. Click "Sign Up" on the login page
-2. Enter name, email, and password (min 6 characters)
+2. Enter name, email, and password
 3. Confirm password
 4. Click "Create Account"
-5. You'll be automatically logged in
+5. If email confirmation is required, verify email and then sign in
 
 ### Login
 1. Enter your email
@@ -114,8 +109,7 @@ explainCode(code)                // Explain code functionality
 
 ### Authentication
 ```
-POST   /auth/register      - Create new user account
-POST   /auth/login         - Login with email & password
+GET    /auth/me            - Get authenticated user profile
 GET    /auth/verify        - Verify authentication token
 ```
 
@@ -127,24 +121,21 @@ POST   /generate           - Generate code (requires auth token)
 
 ## Security Notes
 
-⚠️ **For Demo Purposes**:
-- Passwords are stored client-side (localStorage)
-- No encryption for auth tokens
-- Users stored in localStorage
+🔐 **Current Implementation**:
+- Passwords are managed by Supabase Auth
+- Access tokens are verified server-side via Supabase (`auth.getUser(token)`)
+- Frontend uses Supabase session management and protected routes
 
-🔐 **For Production**:
-- Implement backend authentication with JWT tokens
-- Hash passwords using bcrypt or similar
-- Use secure HTTP only cookies
-- Implement refresh token rotation
-- Add rate limiting
-- Use HTTPS only
+🔒 **Recommended Hardening**:
+- Add API rate limiting for sensitive endpoints
+- Enforce strict CORS origins in backend
+- Enable/verify HTTPS in deployed environments
 
 ## Gemini API Details
 
 ### Model Used
 - **Model**: `gemini-1.5-flash` (latest free model)
-- **API Key**: Already configured in `src/utils/aiService.js`
+- **API Key**: Configure via backend env (`GOOGLE_API_KEY` or `GROQ_API_KEY`)
 - **Pricing**: Free with generous rate limits
 
 ### Rate Limits
@@ -160,8 +151,8 @@ POST   /generate           - Generate code (requires auth token)
 
 ## Troubleshooting
 
-### "User not found" on login
-→ Check that you're using the correct email from registration, or use demo account
+### "Invalid login credentials"
+→ Check Supabase email/password and confirm email if required
 
 ### "Passwords do not match" on sign up
 → Verify both password fields contain identical values
@@ -181,18 +172,6 @@ npm run dev
 
 ## Customization
 
-### Change Demo User
-Edit `src/App.jsx`:
-```javascript
-const demoUsers = [
-  {
-    email: "your@email.com",
-    password: btoa("your-password"),
-    name: "Your Name",
-  }
-];
-```
-
 ### Change API Model
 Edit `src/utils/aiService.js`:
 ```javascript
@@ -210,7 +189,7 @@ Edit `src/pages/Login.jsx` - it's built with Tailwind CSS
 2. ✅ Gemini API integrated
 3. 📝 Create user dashboard
 4. 🗄️ Add database backend
-5. 🔒 Implement production-grade authentication
+5. 🔒 Add auth hardening (rate limits, stricter CORS, audit logging)
 6. 📊 Add usage analytics
 7. 💾 Implement user history/saved items
 
@@ -218,9 +197,9 @@ Edit `src/pages/Login.jsx` - it's built with Tailwind CSS
 
 For issues or questions:
 1. Check the browser console for errors
-2. Verify .env files have correct API keys
+2. Verify frontend/backend .env files for Supabase and AI keys
 3. Ensure all dependencies are installed
-4. Clear localStorage if experiencing auth issues: `localStorage.clear()`
+4. If session appears stale, sign out and sign in again
 
 ---
 

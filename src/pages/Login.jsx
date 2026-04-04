@@ -5,9 +5,11 @@ import { toast } from "react-toastify";
 import {
   isValidEmail,
   isStrongPassword,
-  generateToken,
+  isValidDisplayName,
+  normalizeEmail,
   sanitizeUserData,
 } from "../utils/authUtils";
+import { supabase } from "../utils/supabaseClient";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -30,13 +32,22 @@ const Login = () => {
   };
 
   const validateForm = () => {
-    if (!isValidEmail(formData.email)) {
+    const normalizedEmail = normalizeEmail(formData.email);
+
+    if (!isValidEmail(normalizedEmail)) {
       toast.error("Please enter a valid email address");
       return false;
     }
 
-    if (!isStrongPassword(formData.password)) {
-      toast.error("Password must be at least 6 characters long");
+    if (!isLogin && !isStrongPassword(formData.password)) {
+      toast.error(
+        "Password must be 8-128 chars and include uppercase, lowercase, and number"
+      );
+      return false;
+    }
+
+    if (isLogin && (!formData.password || formData.password.length > 128)) {
+      toast.error("Please enter a valid password");
       return false;
     }
 
@@ -45,8 +56,13 @@ const Login = () => {
       return false;
     }
 
-    if (!isLogin && !formData.name.trim()) {
-      toast.error("Please enter your name");
+    if (!isLogin && !isValidDisplayName(formData.name)) {
+      toast.error("Please enter a valid full name (2-60 letters)");
+      return false;
+    }
+
+    if (normalizedEmail.length > 254) {
+      toast.error("Email is too long");
       return false;
     }
 
@@ -61,55 +77,67 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      let users = JSON.parse(localStorage.getItem("users")) || [];
+      const email = normalizeEmail(formData.email);
+      const password = formData.password;
 
       if (isLogin) {
-        // Login flow
-        const user = users.find((u) => u.email === formData.email);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-        if (!user) {
-          toast.error("User not found. Please sign up first.");
-          setLoading(false);
+        if (error || !data?.session || !data?.user) {
+          toast.error(error?.message || "Invalid login credentials");
           return;
         }
 
-        if (btoa(formData.password) !== user.password) {
-          toast.error("Invalid password");
-          setLoading(false);
-          return;
-        }
+        const user = sanitizeUserData({
+          id: data.user.id,
+          email: data.user.email,
+          name:
+            data.user.user_metadata?.full_name ||
+            data.user.user_metadata?.name ||
+            data.user.email?.split("@")[0],
+          createdAt: data.user.created_at,
+        });
 
-        const token = generateToken(user.id);
-        login(user, token);
+        login(user, data.session.access_token);
         toast.success("Login successful!");
         navigate("/");
       } else {
-        // Sign up flow
-        const userExists = users.find((u) => u.email === formData.email);
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: formData.name.trim(),
+            },
+          },
+        });
 
-        if (userExists) {
-          toast.error("Email already registered. Please login.");
-          setLoading(false);
+        if (error) {
+          toast.error(error.message || "Failed to create account");
           return;
         }
 
-        const newUser = sanitizeUserData({
-          id: Date.now().toString(),
-          email: formData.email,
-          name: formData.name,
-        });
+        if (data?.session && data?.user) {
+          const newUser = sanitizeUserData({
+            id: data.user.id,
+            email: data.user.email,
+            name:
+              data.user.user_metadata?.full_name ||
+              data.user.user_metadata?.name ||
+              formData.name.trim(),
+            createdAt: data.user.created_at,
+          });
 
-        newUser.password = btoa(formData.password); // Store hashed password
-        users.push(newUser);
-        localStorage.setItem("users", JSON.stringify(users));
-
-        const token = generateToken(newUser.id);
-        login(newUser, token);
-        toast.success("Account created successfully!");
-        navigate("/");
+          login(newUser, data.session.access_token);
+          toast.success("Account created successfully!");
+          navigate("/");
+        } else {
+          toast.success("Account created. Please verify your email and sign in.");
+          setIsLogin(true);
+        }
       }
     } catch (error) {
       toast.error("An error occurred. Please try again.");
@@ -157,6 +185,8 @@ const Login = () => {
                 placeholder="Enter your full name"
                 className="input-field w-full px-4 py-3 rounded-lg border focus:outline-none transition duration-200"
                 disabled={loading}
+                maxLength={60}
+                autoComplete="name"
               />
             </div>
           )}
@@ -173,6 +203,8 @@ const Login = () => {
               placeholder="Enter your email"
               className="input-field w-full px-4 py-3 rounded-lg border focus:outline-none transition duration-200"
               disabled={loading}
+              maxLength={254}
+              autoComplete="email"
             />
           </div>
 
@@ -180,15 +212,22 @@ const Login = () => {
             <label className="block app-text-primary font-semibold mb-2 text-sm">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              placeholder="Enter your password (min 6 characters)"
-              className="input-field w-full px-4 py-3 rounded-lg border focus:outline-none transition duration-200"
-              disabled={loading}
-            />
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder={
+                  isLogin
+                    ? "Enter your password"
+                    : "Enter password (8-128 chars, A-Z, a-z, 0-9)"
+                }
+                className="input-field w-full px-4 py-3 rounded-lg border focus:outline-none transition duration-200"
+                disabled={loading}
+                minLength={isLogin ? 1 : 8}
+                maxLength={128}
+                autoComplete={isLogin ? "current-password" : "new-password"}
+              />
           </div>
 
           {!isLogin && (
@@ -204,6 +243,9 @@ const Login = () => {
                 placeholder="Confirm your password"
                 className="input-field w-full px-4 py-3 rounded-lg border focus:outline-none transition duration-200"
                 disabled={loading}
+                minLength={8}
+                maxLength={128}
+                autoComplete="new-password"
               />
             </div>
           )}
@@ -237,9 +279,7 @@ const Login = () => {
         </div>
 
         <p className="text-center text-xs app-text-secondary mt-6">
-          Demo Credentials:<br className="mt-1" />
-          Email: demo@example.com<br />
-          Password: password123
+          Authentication is powered by Supabase.
         </p>
       </div>
     </div>

@@ -122,11 +122,8 @@ async function generateWithGroq(fullPrompt) {
   return groqData?.choices?.[0]?.message?.content || "";
 }
 
-// ✅ Simple in-memory user store (for demo - replace with database in production)
-const users = new Map();
-
 // ✅ Auth Middleware
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -134,74 +131,41 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: "No token provided" });
   }
 
-  // For demo purposes, we'll just verify token exists
-  // In production, verify JWT signature
-  req.token = token;
-  next();
+  try {
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !data?.user) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
+    req.token = token;
+    req.user = data.user;
+    return next();
+  } catch (error) {
+    return res.status(401).json({ error: "Token verification failed" });
+  }
 };
 
-// ✅ Auth Routes
-app.post("/auth/register", (req, res) => {
-  const { email, password, name } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password required" });
-  }
-
-  if (users.has(email)) {
-    return res.status(400).json({ error: "User already exists" });
-  }
-
-  const userId = Date.now().toString();
-  users.set(email, {
-    id: userId,
-    email,
-    password, // In production, hash this
-    name: name || email.split("@")[0],
-    createdAt: new Date().toISOString(),
-  });
-
-  const token = `token_${userId}_${Date.now()}`;
-
+// ✅ Auth Route
+app.get("/auth/me", authenticateToken, (req, res) => {
+  const user = req.user;
   res.json({
     success: true,
-    token,
-    user: {
-      id: userId,
-      email,
-      name: name || email.split("@")[0],
-    },
-  });
-});
-
-app.post("/auth/login", (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password required" });
-  }
-
-  const user = users.get(email);
-
-  if (!user || user.password !== password) {
-    return res.status(401).json({ error: "Invalid credentials" });
-  }
-
-  const token = `token_${user.id}_${Date.now()}`;
-
-  res.json({
-    success: true,
-    token,
     user: {
       id: user.id,
       email: user.email,
-      name: user.name,
+      name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0],
     },
   });
 });
 
 app.get("/auth/verify", authenticateToken, (req, res) => {
-  res.json({ success: true, token: req.token });
+  res.json({
+    success: true,
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+    },
+  });
 });
 
 // ✅ Test Route
@@ -313,7 +277,7 @@ Output rules:
 
     try {
       await supabaseAdmin.from("generated_code_history").insert({
-        user_token: req.token,
+        user_token: req.user.id,
         framework,
         prompt,
         code: text,
@@ -334,19 +298,19 @@ Output rules:
 
 app.get("/history", authenticateToken, async (req, res) => {
   try {
-    const token = req.token;
+    const userId = req.user?.id;
     
-    if (!token) {
-      return res.status(401).json({ error: "No token provided", history: [] });
+    if (!userId) {
+      return res.status(401).json({ error: "No authenticated user", history: [] });
     }
 
     try {
-      const { data, error } = await supabaseAdmin
-        .from("generated_code_history")
-        .select("id,framework,prompt,code,created_at")
-        .eq("user_token", token)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        const { data, error } = await supabaseAdmin
+          .from("generated_code_history")
+          .select("id,framework,prompt,code,created_at")
+          .eq("user_token", userId)
+          .order("created_at", { ascending: false })
+          .limit(50);
 
       if (error) {
         console.warn("⚠️ Supabase error fetching history:", error.message);
